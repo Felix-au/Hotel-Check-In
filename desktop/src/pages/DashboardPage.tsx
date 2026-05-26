@@ -32,16 +32,18 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const SKELETON_LABELS = ['Available Rooms','Occupied Rooms','Active Bookings',"Today's Guests",'Maintenance','Total Rooms']
+
   const statCards = stats
     ? [
-        { label: 'Available Rooms',   value: stats.rooms.available,   color: 'var(--green)',  bg: 'var(--green-dim)',  icon: '✓' },
-        { label: 'Occupied Rooms',    value: stats.rooms.occupied,    color: 'var(--red)',    bg: 'var(--red-dim)',    icon: '●' },
-        { label: 'Active Bookings',   value: stats.active_bookings,   color: 'var(--accent)', bg: 'var(--accent-dim)', icon: '≡' },
-        { label: "Today's Guests",    value: stats.guests_today,      color: 'var(--blue)',   bg: 'var(--blue-dim)',   icon: '♟' },
-        { label: 'Maintenance',       value: stats.rooms.maintenance, color: 'var(--amber)',  bg: 'var(--amber-dim)',  icon: '⚙' },
-        { label: 'Total Rooms',       value: stats.rooms.total,       color: 'var(--text-secondary)', bg: 'var(--bg-glass)', icon: '⊞' },
+        { label: 'Available Rooms',   value: stats.rooms.available,   color: 'var(--green)',  bg: 'var(--green-dim)',  icon: '✓', skeleton: false },
+        { label: 'Occupied Rooms',    value: stats.rooms.occupied,    color: 'var(--red)',    bg: 'var(--red-dim)',    icon: '●', skeleton: false },
+        { label: 'Active Bookings',   value: stats.active_bookings,   color: 'var(--accent)', bg: 'var(--accent-dim)', icon: '≡', skeleton: false },
+        { label: "Today's Guests",    value: stats.guests_today,      color: 'var(--blue)',   bg: 'var(--blue-dim)',   icon: '♟', skeleton: false },
+        { label: 'Maintenance',       value: stats.rooms.maintenance, color: 'var(--amber)',  bg: 'var(--amber-dim)',  icon: '⚙', skeleton: false },
+        { label: 'Total Rooms',       value: stats.rooms.total,       color: 'var(--text-secondary)', bg: 'var(--bg-glass)', icon: '⊞', skeleton: false },
       ]
-    : []
+    : SKELETON_LABELS.map(label => ({ label, value: '—' as string | number, color: 'var(--text-muted)', bg: 'var(--bg-glass)', icon: '·', skeleton: true }))
 
   return (
     <div className="dashboard animate-fade">
@@ -65,8 +67,8 @@ export default function DashboardPage() {
       )}
 
       <div className="stat-grid">
-        {statCards.map(({ label, value, color, bg, icon }) => (
-          <div key={label} className="stat-card glass-card">
+        {statCards.map(({ label, value, color, bg, icon, skeleton }) => (
+          <div key={label} className={`stat-card glass-card${skeleton ? ' stat-skeleton' : ''}`}>
             <div className="stat-icon" style={{ background: bg, color }}>
               {icon}
             </div>
@@ -111,6 +113,8 @@ export default function DashboardPage() {
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 16px;
         }
+        .stat-skeleton { opacity: 0.45; }
+        .stat-skeleton .stat-value { font-size: 20px; }
         .stat-card {
           padding: 20px;
           display: flex;

@@ -177,8 +177,8 @@ export default function RoomsPage() {
         .room-actions { margin-top: 4px; }
         .empty-state { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted); font-size: 14px; }
         .loading-state { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 14px; padding: 40px 0; justify-content: center; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { padding: 28px; width: 480px; max-width: 95vw; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; z-index: 100; overflow-y: auto; }
+        .modal { padding: 28px; width: 480px; max-width: 95vw; max-height: calc(100vh - 96px); overflow-y: auto; }
         .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .form-field { display: flex; flex-direction: column; gap: 6px; }
