@@ -7,6 +7,8 @@
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build && tsc -p tsconfig.electron.json",
     "package": "npm run build && electron-builder",
+    "package:dir": "npm run build && electron-builder --dir",
+    "clean": "if exist dist rmdir /s /q dist && if exist dist-electron rmdir /s /q dist-electron && if exist release rmdir /s /q release",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -41,35 +43,39 @@
   "build": {
     "appId": "com.hotelcheckin.desktop",
     "productName": "Hotel Check-In",
+    "copyright": "Copyright © 2026 Hotel Check-In",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "public"
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*",
-      "db-engine/**/*"
+      "dist-electron/**/*"
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/icon.ico"
+      "icon": "public/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "include": "installer.nsh",
+      "artifactName": "HotelCheckIn-Setup-${version}.exe"
     },
     "extraResources": [
       {
         "from": "db-engine",
-        "to": "db-engine"
+        "to": "db-engine",
+        "filter": ["**/*", "!README.md", "!.gitkeep"]
       },
       {
         "from": "storage",
         "to": "storage",
-        "filter": [
-          ".gitkeep"
-        ]
+        "filter": [".gitkeep"]
       }
     ]
   }
