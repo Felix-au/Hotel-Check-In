@@ -10,29 +10,41 @@
 node_modules/
 jspm_packages/
 web_modules/
+mobile/.expo/
+mobile/android/
+mobile/ios/
 
 # 3. Build & Target Output Directories
 dist/
 dist-electron/
 build/
 out/
-bin/
 obj/
 release/
 *.msi
-*.exe
-*.apk
 *.zip
 *.tar.gz
+
+# Packaged binaries (but NOT source APKs tracked intentionally)
+*.apk
+
+# db-engine: ignore the actual binaries, keep README/.gitkeep
+desktop/db-engine/bin/
+
+# storage: ignore actual image uploads, keep .gitkeep
+desktop/storage/portraits/
+desktop/storage/id-proofs/
 
 # 4. Embedded Database & Local Assets
 *.db
 *.sqlite
 /db_data/
-/storage/
 /assets/uploads/
 mysql-data/
 maria-data/
+
+# MariaDB runtime data directory (created at first launch in userData)
+desktop/db-engine/data/
 
 # 5. OS & IDE Configuration Files
 .DS_Store
