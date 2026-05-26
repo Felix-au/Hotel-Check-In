@@ -3,6 +3,8 @@
 # 1. Workspace Rules
 /scratch/
 /scratch/*
+.agentrules
+
 
 # 2. Dependency Directories
 node_modules/
