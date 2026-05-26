@@ -13,6 +13,7 @@ web_modules/
 
 # 3. Build & Target Output Directories
 dist/
+dist-electron/
 build/
 out/
 bin/
