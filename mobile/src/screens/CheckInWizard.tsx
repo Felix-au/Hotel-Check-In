@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, SafeAr
 import * as ImagePicker from 'expo-image-picker'
 import { colors, radius, font, space } from '../theme'
 import { smartCheckin } from '../sync'
-import { fetchAvailableRooms } from '../api'
+import { fetchAvailableRooms, uploadPhoto } from '../api'
 import PhotoWidget from '../components/PhotoWidget'
 
 type Step = 'party' | 'guest' | 'document' | 'rooms' | 'confirm'
@@ -82,9 +82,24 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
     setSaving(true)
     try {
       const sexMap: Record<string,string> = { M:'male', F:'female', O:'other' }
+
+      // Upload guest photos in parallel
+      const photoPaths = await Promise.all(
+        guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`) : Promise.resolve(null))
+      )
+      // Upload document photo
+      const docPath = docUri ? await uploadPhoto(docUri, 'doc') : null
+
       const res = await smartCheckin({
-        guests: guests.map((x,i) => ({ name: x.name.trim()||`Guest ${i+1}`, phone:x.phone||undefined, age:x.age?parseInt(x.age):undefined, sex:x.sex?sexMap[x.sex]??x.sex:undefined, is_primary:i===0 })),
-        room_ids: selRooms, check_out_date: checkout(), notes: notes.trim()||undefined
+        guests: guests.map((x,i) => ({
+          name: x.name.trim()||`Guest ${i+1}`,
+          phone: x.phone||undefined,
+          age: x.age?parseInt(x.age):undefined,
+          sex: x.sex?sexMap[x.sex]??x.sex:undefined,
+          photo_path: photoPaths[i]??undefined,
+          is_primary: i===0
+        })),
+        room_ids: selRooms, check_out_date: checkout(), document_path: docPath??undefined, notes: notes.trim()||undefined
       })
       setResult(res)
     } catch(e:any) { Alert.alert('Error', e.message) }

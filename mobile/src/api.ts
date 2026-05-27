@@ -1,3 +1,5 @@
+import { Platform } from 'react-native'
+import * as FileSystem from 'expo-file-system'
 import { getServerConfig } from './store'
 
 class ApiError extends Error {
@@ -43,11 +45,36 @@ export async function fetchAvailableRooms() {
   return data.rooms ?? data  // unwrap { rooms: [...] } or return array directly
 }
 
+// ── Photo upload ──────────────────────────────────────────────────────────────
+export async function uploadPhoto(uri: string, prefix = 'photo'): Promise<string | null> {
+  try {
+    let base64: string
+    if (Platform.OS === 'web') {
+      const blob = await fetch(uri).then(r => r.blob())
+      base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } else {
+      const raw = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+      base64 = `data:image/jpeg;base64,${raw}`
+    }
+    const res = await request('/api/photos/upload', { method: 'POST', body: JSON.stringify({ data: base64, prefix }) }, 20000)
+    return res.path ?? null
+  } catch (err) {
+    console.warn('[API] Photo upload failed:', err)
+    return null
+  }
+}
+
 // ── Check-in ──────────────────────────────────────────────────────────────────
 export async function submitCheckin(payload: {
-  guests: { name: string; phone?: string; age?: number; sex?: string; is_primary?: boolean }[]
+  guests: { name: string; phone?: string; age?: number; sex?: string; photo_path?: string; is_primary?: boolean }[]
   room_ids: number[]
   check_out_date: string
+  document_path?: string
   notes?: string
 }) {
   return request('/api/checkin', { method: 'POST', body: JSON.stringify(payload) })

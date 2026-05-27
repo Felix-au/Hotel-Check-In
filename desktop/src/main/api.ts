@@ -2,6 +2,9 @@ import express, { Application, Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import * as http from 'http'
 import * as os from 'os'
+import * as fs from 'fs'
+import * as path from 'path'
+import { app as electronApp } from 'electron'
 import { getApiToken } from './config'
 import { dbAll, dbGet, dbRun } from './db'
 import QRCode from 'qrcode'
@@ -67,6 +70,25 @@ export async function startApiServer(): Promise<number> {
     }
   })
 
+  // ─── Photo upload (from mobile) ─────────────────────────────────────────────
+  app.post('/api/photos/upload', (req, res) => {
+    const { data, prefix = 'photo' } = req.body
+    if (!data) return res.status(400).json({ error: 'No image data' })
+    try {
+      const photosDir = path.join(electronApp.getPath('userData'), 'photos')
+      fs.mkdirSync(photosDir, { recursive: true })
+      const fileName = `${prefix}_${Date.now()}.jpg`
+      const filePath = path.join(photosDir, fileName)
+      const base64 = data.replace(/^data:image\/\w+;base64,/, '')
+      fs.writeFileSync(filePath, Buffer.from(base64, 'base64'))
+      console.log('[API] Photo saved:', filePath)
+      res.json({ path: filePath })
+    } catch (err: any) {
+      console.error('[API] Photo upload error:', err)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   app.get('/api/rooms/available', (_req, res) => {
     try {
       const rooms = dbAll(`SELECT * FROM rooms WHERE status = 'available' ORDER BY floor, room_number`)
@@ -78,7 +100,7 @@ export async function startApiServer(): Promise<number> {
 
   // ─── Check-in (from mobile) ───────────────────────────────────────────────
   app.post('/api/checkin', (req, res) => {
-    const { guests, room_ids, check_out_date, notes } = req.body
+    const { guests, room_ids, check_out_date, notes, document_path } = req.body
     if (!guests?.length || !room_ids?.length || !check_out_date) {
       return res.status(400).json({ error: 'guests, room_ids, and check_out_date are required' })
     }
@@ -86,14 +108,14 @@ export async function startApiServer(): Promise<number> {
     try {
       const ref = 'SS' + Date.now().toString(36).toUpperCase()
       const groupId = dbRun(
-        `INSERT INTO booking_groups (booking_reference, check_out_date, notes) VALUES (?, ?, ?)`,
-        [ref, check_out_date, notes ?? null]
+        `INSERT INTO booking_groups (booking_reference, check_out_date, notes, id_proof_path) VALUES (?, ?, ?, ?)`,
+        [ref, check_out_date, notes ?? null, document_path ?? null]
       )
 
       for (const g of guests) {
         dbRun(
-          `INSERT INTO guests (group_id, name, phone, age, sex, is_primary_contact) VALUES (?, ?, ?, ?, ?, ?)`,
-          [groupId, g.name, g.phone ?? null, g.age ?? null, g.sex ?? null, g.is_primary ? 1 : 0]
+          `INSERT INTO guests (group_id, name, phone, age, sex, photo_path, is_primary_contact) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [groupId, g.name, g.phone ?? null, g.age ?? null, g.sex ?? null, g.photo_path ?? null, g.is_primary ? 1 : 0]
         )
       }
 
