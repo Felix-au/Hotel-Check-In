@@ -120,7 +120,7 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
           checkin: buildPayload(guests.map(()=>null), null),
           photoBase64: { guests: guests.map(x => x.photoBase64??null), document: docBase64??null }
         })
-        setResult({ ok: false, offline: true, queueId })
+        setResult({ ok: false, offline: true })
         return
       }
 

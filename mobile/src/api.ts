@@ -70,7 +70,7 @@ export async function uploadPhoto(uri: string, prefix = 'photo', precomputedBase
       // Fallback: copy to cache to handle content:// URIs
       let fileUri = uri
       if (!uri.startsWith('file://')) {
-        const cacheUri = FileSystem.cacheDirectory + `${prefix}_${Date.now()}.jpg`
+        const cacheUri = (FileSystem.documentDirectory ?? '') + `${prefix}_${Date.now()}.jpg`
         await FileSystem.copyAsync({ from: uri, to: cacheUri })
         fileUri = cacheUri
       }

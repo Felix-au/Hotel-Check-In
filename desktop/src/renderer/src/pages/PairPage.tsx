@@ -1,32 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ServerInfo {
   ip: string; port: number; url: string; token: string; qr: string
 }
 
+/** Copies text — falls back to execCommand for file:// Electron contexts */
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+    document.body.appendChild(el)
+    el.focus(); el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  }
+}
+
 export default function PairPage(): JSX.Element {
   const [info, setInfo] = useState<ServerInfo | null>(null)
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
   const [regen, setRegen] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const load = async (): Promise<void> => {
     setLoading(true)
-    try {
-      const data = await window.api.server.info()
-      setInfo(data)
-    } finally {
-      setLoading(false)
-    }
+    try { setInfo(await window.api.server.info()) }
+    finally { setLoading(false) }
   }
 
   useEffect(() => { load() }, [])
 
-  const copyUrl = (): void => {
-    if (!info) return
-    navigator.clipboard.writeText(info.url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const copy = (field: string, value: string) => {
+    copyText(value)
+    if (copyTimer.current) clearTimeout(copyTimer.current)
+    setCopiedField(field)
+    copyTimer.current = setTimeout(() => setCopiedField(null), 2000)
   }
 
   const handleRegen = async (): Promise<void> => {
@@ -36,6 +48,16 @@ export default function PairPage(): JSX.Element {
     await load()
     setRegen(false)
   }
+
+  const CopyBtn = ({ field, value }: { field: string; value: string }) => (
+    <button
+      className="btn btn-ghost btn-sm"
+      onClick={() => copy(field, value)}
+      style={{ minWidth: 74, flexShrink: 0 }}
+    >
+      {copiedField === field ? '✓ Copied' : '⎘ Copy'}
+    </button>
+  )
 
   return (
     <>
@@ -79,11 +101,11 @@ export default function PairPage(): JSX.Element {
                 <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Connection Details</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[
-                    { label: 'Server URL', value: info.url },
-                    { label: 'Local IP',   value: info.ip },
-                    { label: 'Port',       value: String(info.port) },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    { label: 'Server URL', field: 'url',   value: info.url },
+                    { label: 'Local IP',   field: 'ip',    value: info.ip },
+                    { label: 'Port',       field: 'port',  value: String(info.port) },
+                  ].map(({ label, field, value }) => (
+                    <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-mute)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</span>
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 10,
@@ -91,9 +113,7 @@ export default function PairPage(): JSX.Element {
                         borderRadius: 8, padding: '8px 12px'
                       }}>
                         <code style={{ flex: 1, color: 'var(--accent)', fontSize: 13, fontFamily: 'JetBrains Mono' }}>{value}</code>
-                        {label === 'Server URL' && (
-                          <button className="btn btn-ghost btn-sm" onClick={copyUrl}>{copied ? '✓ Copied' : '⎘ Copy'}</button>
-                        )}
+                        <CopyBtn field={field} value={value} />
                       </div>
                     </div>
                   ))}
@@ -102,7 +122,10 @@ export default function PairPage(): JSX.Element {
 
               {/* Token */}
               <div className="card card-pad">
-                <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Pairing Token</h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <h3 style={{ fontWeight: 700 }}>Pairing Token</h3>
+                  <CopyBtn field="token" value={info.token} />
+                </div>
                 <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 14, lineHeight: 1.6 }}>
                   This token is embedded in the QR code. It ensures only your devices can connect.
                   It is generated once and persists unless you regenerate it.
