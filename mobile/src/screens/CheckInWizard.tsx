@@ -8,9 +8,9 @@ import PhotoWidget from '../components/PhotoWidget'
 import { saveRoomsCache, getRoomsCache } from '../store'
 
 type Step = 'party' | 'guest' | 'document' | 'rooms' | 'confirm'
-type Guest = { name: string; phone: string; age: string; sex: string; photoUri: string | null; skipped: boolean }
+type Guest = { name: string; phone: string; age: string; sex: string; photoUri: string | null; photoBase64: string | null; skipped: boolean }
 type Room = { id: number; room_number: string; room_type: string; floor: number; price_per_night: number }
-const blank = (): Guest => ({ name: '', phone: '', age: '', sex: '', photoUri: null, skipped: false })
+const blank = (): Guest => ({ name: '', phone: '', age: '', sex: '', photoUri: null, photoBase64: null, skipped: false })
 
 // ── Step bar ──────────────────────────────────────────────────────────────────
 function StepBar({ step, party, gi }: { step: Step; party: number; gi: number }) {
@@ -47,6 +47,7 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
   const [gi, setGi]           = useState(0)
   const [guests, setGuests]   = useState<Guest[]>([])
   const [docUri, setDocUri]   = useState<string | null>(null)
+  const [docBase64, setDocBase64] = useState<string | null>(null)
   const [rooms, setRooms]     = useState<Room[]>([])
   const [selRooms, setSelRooms] = useState<number[]>([])
   const [nights, setNights]   = useState('1')
@@ -55,15 +56,17 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
   const [result, setResult]   = useState<{ ok: boolean; offline: boolean; ref?: string } | null>(null)
 
   const [offlineRooms, setOfflineRooms] = useState(false)
+  const [roomsLoading, setRoomsLoading] = useState(false)
 
   useEffect(() => {
     if (step === 'rooms') {
-      fetchAvailableRooms()
-        .then(r => { setRooms(r); saveRoomsCache(r); setOfflineRooms(false) })
-        .catch(async () => {
-          const cached = await getRoomsCache()
-          if (cached) { setRooms(cached); setOfflineRooms(true) }
-        })
+      setRoomsLoading(true)
+      // Show cache instantly
+      getRoomsCache().then(cached => { if (cached) { setRooms(cached); setOfflineRooms(true) } })
+      // Refresh from network in background (3s timeout)
+      fetchAvailableRooms(3000)
+        .then(r => { setRooms(r); saveRoomsCache(r); setOfflineRooms(false); setRoomsLoading(false) })
+        .catch(() => setRoomsLoading(false))
     }
   }, [step])
 
@@ -73,6 +76,8 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
 
   const g = guests[gi]
   const setG = (f: keyof Guest, v: any) => setGuests(p => p.map((x,i) => i===gi ? {...x,[f]:v} : x))
+  const setGPhoto = (uri: string | null, base64?: string | null) =>
+    setGuests(p => p.map((x,i) => i===gi ? {...x, photoUri: uri, photoBase64: base64 ?? null} : x))
 
   const nextGuest = (skip=false) => {
     if (skip) setGuests(p => p.map((x,i) => i===gi ? {...x,skipped:true} : x))
@@ -87,20 +92,20 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
     if (step==='confirm')  setStep('rooms')
   }
 
-  const pickDocCamera = async () => { const r = await ImagePicker.launchCameraAsync({quality:0.85}); if(!r.canceled) setDocUri(r.assets[0].uri) }
-  const pickDocGallery = async () => { const r = await ImagePicker.launchImageLibraryAsync({quality:0.85}); if(!r.canceled) setDocUri(r.assets[0].uri) }
+  const pickDocCamera = async () => { const r = await ImagePicker.launchCameraAsync({quality:0.6,base64:true}); if(!r.canceled){ setDocUri(r.assets[0].uri); setDocBase64(r.assets[0].base64??null) } }
+  const pickDocGallery = async () => { const r = await ImagePicker.launchImageLibraryAsync({quality:0.6,base64:true}); if(!r.canceled){ setDocUri(r.assets[0].uri); setDocBase64(r.assets[0].base64??null) } }
 
   const submit = async () => {
     setSaving(true)
     try {
       const sexMap: Record<string,string> = { M:'male', F:'female', O:'other' }
 
-      // Upload guest photos in parallel
+      // Upload guest photos in parallel (using pre-computed base64)
       const photoPaths = await Promise.all(
-        guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`) : Promise.resolve(null))
+        guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`, x.photoBase64) : Promise.resolve(null))
       )
       // Upload document photo
-      const docPath = docUri ? await uploadPhoto(docUri, 'doc') : null
+      const docPath = docUri ? await uploadPhoto(docUri, 'doc', docBase64) : null
 
       const res = await smartCheckin({
         guests: guests.map((x,i) => ({
@@ -183,7 +188,7 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
           <View style={s.guestLayout}>
             <View style={{alignItems:'center',gap:4}}>
               <Text style={s.lbl}>PHOTO</Text>
-              <PhotoWidget uri={g.photoUri} onChange={v=>setG('photoUri',v)} size={110}/>
+              <PhotoWidget uri={g.photoUri} onChange={setGPhoto} size={110}/>
             </View>
             <View style={{flex:1,gap:12}}>
               <View><Text style={s.lbl}>FULL NAME</Text><TextInput style={s.input} value={g.name} onChangeText={v=>setG('name',v)} placeholder="Leave blank to skip" placeholderTextColor={colors.textMute}/></View>

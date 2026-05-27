@@ -40,16 +40,19 @@ export async function ping(): Promise<boolean> {
 }
 
 // ── Rooms ──────────────────────────────────────────────────────────────────────
-export async function fetchAvailableRooms() {
-  const data = await request('/api/rooms/available')
-  return data.rooms ?? data  // unwrap { rooms: [...] } or return array directly
+export async function fetchAvailableRooms(timeoutMs = 3000) {
+  const data = await request('/api/rooms/available', {}, timeoutMs)
+  return data.rooms ?? data
 }
 
 // ── Photo upload ──────────────────────────────────────────────────────────────
-export async function uploadPhoto(uri: string, prefix = 'photo'): Promise<string | null> {
+export async function uploadPhoto(uri: string, prefix = 'photo', precomputedBase64?: string | null): Promise<string | null> {
   try {
     let base64: string
-    if (Platform.OS === 'web') {
+    if (precomputedBase64) {
+      // Base64 provided directly from picker — fastest path, no file I/O
+      base64 = `data:image/jpeg;base64,${precomputedBase64}`
+    } else if (Platform.OS === 'web') {
       const blob = await fetch(uri).then(r => r.blob())
       base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -58,7 +61,7 @@ export async function uploadPhoto(uri: string, prefix = 'photo'): Promise<string
         reader.readAsDataURL(blob)
       })
     } else {
-      // Android may return content:// URIs — copy to file cache first
+      // Fallback: copy to cache to handle content:// URIs
       let fileUri = uri
       if (!uri.startsWith('file://')) {
         const cacheUri = FileSystem.cacheDirectory + `${prefix}_${Date.now()}.jpg`
