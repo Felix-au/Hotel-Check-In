@@ -81,8 +81,9 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
   const submit = async () => {
     setSaving(true)
     try {
+      const sexMap: Record<string,string> = { M:'male', F:'female', O:'other' }
       const res = await smartCheckin({
-        guests: guests.map((x,i) => ({ name: x.name.trim()||`Guest ${i+1}`, phone:x.phone||undefined, age:x.age?parseInt(x.age):undefined, sex:x.sex||undefined, is_primary:i===0 })),
+        guests: guests.map((x,i) => ({ name: x.name.trim()||`Guest ${i+1}`, phone:x.phone||undefined, age:x.age?parseInt(x.age):undefined, sex:x.sex?sexMap[x.sex]??x.sex:undefined, is_primary:i===0 })),
         room_ids: selRooms, check_out_date: checkout(), notes: notes.trim()||undefined
       })
       setResult(res)
