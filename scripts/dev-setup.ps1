@@ -2,6 +2,8 @@
 # One-shot developer environment bootstrap for the Hotel Check-In project.
 # Run from repository root: .\scripts\dev-setup.ps1
 
+$ErrorActionPreference = "Stop"
+
 # Resolve script directory or fallback gracefully
 $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir) {
@@ -28,9 +30,11 @@ if (Test-Path "$ScriptDir\setup-mariadb.ps1") {
     $ScriptsPath = "$Root\scripts"
 }
 
-Write-Host "`n╔════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host   "║  Hotel Check-In — Developer Setup         ║" -ForegroundColor Cyan
-Write-Host   "╚════════════════════════════════════════════╝`n" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=============================================" -ForegroundColor Cyan
+Write-Host "   Hotel Check-In - Developer Setup" -ForegroundColor Cyan
+Write-Host "=============================================" -ForegroundColor Cyan
+Write-Host ""
 
 # ── 1. Check Node.js ────────────────────────────────────────────────────────
 Write-Host "[1/4] Checking Node.js..." -ForegroundColor Yellow
@@ -61,9 +65,11 @@ Set-Location $Root
 
 # ── Done ────────────────────────────────────────────────────────────────────
 Set-Location $Root
-Write-Host "`n╔════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host   "║  Setup complete! Next steps:               ║" -ForegroundColor Green
-Write-Host   "║                                            ║" -ForegroundColor Green
-Write-Host   "║  Desktop:  cd desktop && npm run dev      ║" -ForegroundColor Green
-Write-Host   "║  Mobile:   cd mobile  && npx expo start   ║" -ForegroundColor Green
-Write-Host   "╚════════════════════════════════════════════╝`n" -ForegroundColor Green
+Write-Host ""
+Write-Host "=============================================" -ForegroundColor Green
+Write-Host "  Setup complete! Next steps:" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Desktop:  cd desktop && npm run dev" -ForegroundColor Green
+Write-Host "  Mobile:   cd mobile  && npx expo start" -ForegroundColor Green
+Write-Host "=============================================" -ForegroundColor Green
+Write-Host ""
