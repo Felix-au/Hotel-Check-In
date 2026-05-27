@@ -12,10 +12,10 @@ type Page = 'setup' | 'dashboard' | 'rooms' | 'bookings' | 'checkin' | 'pair'
 
 const NAV: { id: Page; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
-  { id: 'rooms',     label: 'Rooms',     icon: '🏠' },
-  { id: 'bookings',  label: 'Bookings',  icon: '📋' },
-  { id: 'checkin',   label: 'Check-In',  icon: '✚' },
-  { id: 'pair',      label: 'Pair',      icon: '📡' },
+  { id: 'rooms', label: 'Rooms', icon: '🏠' },
+  { id: 'bookings', label: 'Bookings', icon: '📋' },
+  { id: 'checkin', label: 'Check-In', icon: '✚' },
+  { id: 'pair', label: 'Pair', icon: '📡' },
 ]
 
 export default function App(): JSX.Element {
@@ -49,11 +49,11 @@ export default function App(): JSX.Element {
   const renderPage = (): JSX.Element => {
     switch (page) {
       case 'dashboard': return <DashboardPage onNavigate={(p) => setPage(p as Page)} />
-      case 'rooms':     return <RoomsPage />
-      case 'bookings':  return <BookingsPage />
-      case 'checkin':   return <CheckInPage onDone={() => setPage('bookings')} />
-      case 'pair':      return <PairPage />
-      default:          return <DashboardPage onNavigate={(p) => setPage(p as Page)} />
+      case 'rooms': return <RoomsPage />
+      case 'bookings': return <BookingsPage />
+      case 'checkin': return <CheckInPage onDone={() => setPage('bookings')} />
+      case 'pair': return <PairPage />
+      default: return <DashboardPage onNavigate={(p) => setPage(p as Page)} />
     }
   }
 
@@ -65,7 +65,7 @@ export default function App(): JSX.Element {
           <img src={logoUrl} alt="SyncStay" className="sidebar-logo" />
           <div>
             <div className="sidebar-name">SyncStay</div>
-            <div className="sidebar-tag">Every device. No compromise.</div>
+            <div className="sidebar-tag">One Platform. Every device.</div>
           </div>
         </div>
 
