@@ -59,13 +59,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         isAccessMediaLocationEnabled: true,
       },
     ],
-    [
-      'react-native-vision-camera',
-      {
-        cameraPermissionText: 'Allow Hotel Check-In to use the camera for guest photos and ID scanning.',
-        enableMicrophonePermission: false,
-      },
-    ],
+
   ],
   // extra: {
   //   eas: {
