@@ -1,0 +1,61 @@
+import * as SecureStore from 'expo-secure-store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const URL_KEY   = 'syncstay_server_url'
+const TOKEN_KEY = 'syncstay_token'
+const QUEUE_KEY = 'syncstay_offline_queue'
+
+// ── Server config ─────────────────────────────────────────────────────────────
+export async function saveServerConfig(url: string, token: string) {
+  await AsyncStorage.setItem(URL_KEY, url)
+  await SecureStore.setItemAsync(TOKEN_KEY, token)
+}
+
+export async function getServerConfig(): Promise<{ url: string; token: string } | null> {
+  const url   = await AsyncStorage.getItem(URL_KEY)
+  const token = await SecureStore.getItemAsync(TOKEN_KEY)
+  if (!url || !token) return null
+  return { url, token }
+}
+
+export async function clearServerConfig() {
+  await AsyncStorage.removeItem(URL_KEY)
+  await SecureStore.deleteItemAsync(TOKEN_KEY)
+}
+
+// ── Offline queue ──────────────────────────────────────────────────────────────
+export type QueuedCheckin = {
+  id: string
+  payload: any
+  timestamp: number
+  attempts: number
+}
+
+export async function getQueue(): Promise<QueuedCheckin[]> {
+  const raw = await AsyncStorage.getItem(QUEUE_KEY)
+  return raw ? JSON.parse(raw) : []
+}
+
+export async function enqueue(payload: any): Promise<string> {
+  const q = await getQueue()
+  const item: QueuedCheckin = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    payload,
+    timestamp: Date.now(),
+    attempts: 0
+  }
+  q.push(item)
+  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(q))
+  return item.id
+}
+
+export async function removeFromQueue(id: string) {
+  const q = await getQueue()
+  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(q.filter(i => i.id !== id)))
+}
+
+export async function bumpAttempts(id: string) {
+  const q = await getQueue()
+  const updated = q.map(i => i.id === id ? { ...i, attempts: i.attempts + 1 } : i)
+  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updated))
+}

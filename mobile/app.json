@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "SyncStay",
+    "slug": "syncstay-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "syncstay",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#060C17"
+    },
+    "ios": { "supportsTablet": false },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#060C17"
+      },
+      "package": "com.syncstay.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-status-bar",
+      [
+        "expo-camera",
+        { "cameraPermission": "SyncStay needs camera access for guest photos and QR code scanning." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "SyncStay needs gallery access to attach document photos." }
+      ]
+    ],
+    "extra": {
+      "eas": { "projectId": "syncstay-mobile" }
+    }
+  }
+}

@@ -92,8 +92,8 @@ export async function startApiServer(): Promise<number> {
 
       for (const g of guests) {
         dbRun(
-          `INSERT INTO guests (group_id, name, age, sex, is_primary_contact) VALUES (?, ?, ?, ?, ?)`,
-          [groupId, g.name, g.age ?? null, g.sex ?? null, g.is_primary ? 1 : 0]
+          `INSERT INTO guests (group_id, name, phone, age, sex, is_primary_contact) VALUES (?, ?, ?, ?, ?, ?)`,
+          [groupId, g.name, g.phone ?? null, g.age ?? null, g.sex ?? null, g.is_primary ? 1 : 0]
         )
       }
 
