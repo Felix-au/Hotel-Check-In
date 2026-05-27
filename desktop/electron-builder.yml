@@ -46,8 +46,6 @@ nsis:
   uninstallDisplayName: SyncStay
   createDesktopShortcut: always
   createStartMenuShortcut: true
-  installerIcon: build/icon.ico
-  uninstallerIcon: build/icon.ico
   runAfterFinish: true
   # Add firewall rule during install (runs with admin privileges)
   include: build/installer.nsh

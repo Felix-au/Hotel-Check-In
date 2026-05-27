@@ -67,7 +67,7 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .sidebar-logo {
-  width: 36px; height: 36px; border-radius: 9px; object-fit: contain;
+  width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
   box-shadow: 0 2px 12px rgba(201,149,106,0.3);
 }
 .sidebar-name { font-size: 15px; font-weight: 800; color: var(--text-pri); letter-spacing: -0.4px; }
