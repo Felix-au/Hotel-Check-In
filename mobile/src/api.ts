@@ -41,7 +41,7 @@ async function request(path: string, options: RequestInit = {}, timeoutMs = 8000
 
 // ── Health check ───────────────────────────────────────────────────────────────
 export async function ping(): Promise<boolean> {
-  try { await request('/api/health', {}, 2000); return true }
+  try { await request('/api/health', {}, 500); return true }
   catch { return false }
 }
 

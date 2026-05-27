@@ -5,7 +5,7 @@ import { colors, radius, font, space } from '../theme'
 import { smartCheckin } from '../sync'
 import { fetchAvailableRooms, uploadPhoto, ping } from '../api'
 import PhotoWidget from '../components/PhotoWidget'
-import { saveRoomsCache, getRoomsCache } from '../store'
+import { saveRoomsCache, getRoomsCache, enqueue } from '../store'
 
 type Step = 'party' | 'guest' | 'document' | 'rooms' | 'confirm'
 type Guest = { name: string; phone: string; age: string; sex: string; photoUri: string | null; photoBase64: string | null; skipped: boolean }
@@ -99,20 +99,7 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
     setSaving(true)
     try {
       const sexMap: Record<string,string> = { M:'male', F:'female', O:'other' }
-      const isOnline = await ping()
-
-      let photoPaths: (string|null)[] = guests.map(() => null)
-      let docPath: string|null = null
-
-      if (isOnline) {
-        // Upload photos now while online
-        photoPaths = await Promise.all(
-          guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`, x.photoBase64) : Promise.resolve(null))
-        )
-        docPath = docUri ? await uploadPhoto(docUri, 'doc', docBase64) : null
-      }
-
-      const payload = {
+      const buildPayload = (photoPaths: (string|null)[], docPath: string|null) => ({
         guests: guests.map((x, i) => ({
           name: x.name.trim()||`Guest ${i+1}`,
           phone: x.phone||undefined,
@@ -121,19 +108,28 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
           photo_path: photoPaths[i]??undefined,
           is_primary: i===0
         })),
-        room_ids: selRooms,
-        check_out_date: checkout(),
-        document_path: docPath??undefined,
-        notes: notes.trim()||undefined
+        room_ids: selRooms, check_out_date: checkout(),
+        document_path: docPath??undefined, notes: notes.trim()||undefined
+      })
+
+      const isOnline = await ping()   // 500ms max
+
+      if (!isOnline) {
+        // Queue immediately — no server call attempted
+        const queueId = await enqueue({
+          checkin: buildPayload(guests.map(()=>null), null),
+          photoBase64: { guests: guests.map(x => x.photoBase64??null), document: docBase64??null }
+        })
+        setResult({ ok: false, offline: true, queueId })
+        return
       }
 
-      // If offline, store base64 (not URIs) so photos persist until sync
-      const photoBase64 = isOnline ? undefined : {
-        guests: guests.map(x => x.photoBase64 ?? null),
-        document: docBase64 ?? null
-      }
-
-      const res = await smartCheckin(payload, photoBase64)
+      // Online — upload photos then submit
+      const photoPaths = await Promise.all(
+        guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`, x.photoBase64) : Promise.resolve(null))
+      )
+      const docPath = docUri ? await uploadPhoto(docUri, 'doc', docBase64) : null
+      const res = await smartCheckin(buildPayload(photoPaths, docPath))
       setResult(res)
     } catch(e:any) { Alert.alert('Error', e.message) }
     setSaving(false)
