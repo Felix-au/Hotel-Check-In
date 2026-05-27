@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp } from '@electron-toolkit/utils'
 import { exec } from 'child_process'
@@ -190,17 +190,17 @@ function registerIpcHandlers(): void {
   })
 
   // ── Check-in from desktop ─────────────────────────────────────────────────────
-  ipcMain.handle('checkin:submit', (_e, { guests, room_ids, check_out_date, notes }) => {
+  ipcMain.handle('checkin:submit', (_e, { guests, room_ids, check_out_date, notes, document_path }) => {
     try {
       const ref = 'SS' + Date.now().toString(36).toUpperCase()
       const groupId = dbRun(
-        `INSERT INTO booking_groups (booking_reference, check_out_date, notes) VALUES (?, ?, ?)`,
-        [ref, check_out_date, notes ?? null]
+        `INSERT INTO booking_groups (booking_reference, check_out_date, notes, id_proof_path) VALUES (?, ?, ?, ?)`,
+        [ref, check_out_date, notes ?? null, document_path ?? null]
       )
       for (const g of guests) {
         dbRun(
-          `INSERT INTO guests (group_id, name, age, sex, is_primary_contact) VALUES (?, ?, ?, ?, ?)`,
-          [groupId, g.name, g.age ?? null, g.sex ?? null, g.is_primary ? 1 : 0]
+          `INSERT INTO guests (group_id, name, phone, age, sex, photo_path, is_primary_contact) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [groupId, g.name || '', g.phone || null, g.age ?? null, g.sex || null, g.photo_path || null, g.is_primary ? 1 : 0]
         )
       }
       for (const roomId of room_ids) {
@@ -211,6 +211,29 @@ function registerIpcHandlers(): void {
     } catch (err: any) {
       return { error: err.message }
     }
+  })
+
+  // ── Booking detail ────────────────────────────────────────────────────────────
+  ipcMain.handle('bookings:detail', (_e, { id }) => {
+    const booking = dbGet(`SELECT * FROM booking_groups WHERE id = ?`, [id])
+    if (!booking) return null
+    const guests = dbAll(`SELECT * FROM guests WHERE group_id = ? ORDER BY is_primary_contact DESC, id`, [id])
+    const rooms  = dbAll(`
+      SELECT r.* FROM rooms r
+      JOIN room_allocations ra ON ra.room_id = r.id
+      WHERE ra.group_id = ?
+    `, [id])
+    return { booking, guests, rooms }
+  })
+
+  // ── Image picker dialog ────────────────────────────────────────────────────────
+  ipcMain.handle('dialog:pickImage', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'heic'] }]
+    })
+    if (result.canceled || !result.filePaths.length) return null
+    return result.filePaths[0]
   })
 
   // ── Dashboard stats ────────────────────────────────────────────────────────────

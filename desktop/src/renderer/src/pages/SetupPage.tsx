@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import logoUrl from '../assets/logo.png'
 
 type Step = { label: string; status: 'waiting' | 'running' | 'done' | 'error'; detail?: string }
 
@@ -53,7 +54,7 @@ export default function SetupPage({ onDone }: { onDone: () => void }): JSX.Eleme
       <div style={{ width: '100%', maxWidth: 480 }}>
         {/* Logo + Title */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <img src="../../../../logo.png" alt="SyncStay" style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }} />
+          <img src={logoUrl} alt="SyncStay" style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }} />
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-pri)' }}>Welcome to SyncStay</h1>
           <p style={{ color: 'var(--text-mute)', fontSize: 14, marginTop: 6 }}>
             {done ? 'All done! Launching…' : 'Setting up your hotel management system…'}

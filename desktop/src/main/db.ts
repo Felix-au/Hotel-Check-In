@@ -41,6 +41,7 @@ export async function initDatabase(): Promise<void> {
   db.run('PRAGMA foreign_keys=ON;')
 
   createSchema()
+  applyMigrations()
   saveDatabase()
   console.log('[DB] SQLite initialized at', dbPath)
 }
@@ -96,6 +97,21 @@ function createSchema(): void {
       UNIQUE(room_id, group_id)
     )
   `)
+}
+
+function applyMigrations(): void {
+  // guests.phone
+  const gCols = dbAll(`PRAGMA table_info(guests)`)
+  if (!gCols.find((c) => c.name === 'phone')) {
+    db!.run(`ALTER TABLE guests ADD COLUMN phone TEXT`)
+    console.log('[DB] Migration: guests.phone added')
+  }
+  // booking_groups.id_proof_path (group document photo)
+  const bgCols = dbAll(`PRAGMA table_info(booking_groups)`)
+  if (!bgCols.find((c) => c.name === 'id_proof_path')) {
+    db!.run(`ALTER TABLE booking_groups ADD COLUMN id_proof_path TEXT`)
+    console.log('[DB] Migration: booking_groups.id_proof_path added')
+  }
 }
 
 export function saveDatabase(): void {

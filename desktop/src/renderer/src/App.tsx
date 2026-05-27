@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './index.css'
+import logoUrl from './assets/logo.png'
 import SetupPage from './pages/SetupPage'
 import DashboardPage from './pages/DashboardPage'
 import RoomsPage from './pages/RoomsPage'
@@ -9,13 +10,13 @@ import PairPage from './pages/PairPage'
 
 type Page = 'setup' | 'dashboard' | 'rooms' | 'bookings' | 'checkin' | 'pair'
 
-const NAV = [
+const NAV: { id: Page; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
   { id: 'rooms',     label: 'Rooms',     icon: '🏠' },
   { id: 'bookings',  label: 'Bookings',  icon: '📋' },
   { id: 'checkin',   label: 'Check-In',  icon: '✚' },
   { id: 'pair',      label: 'Pair',      icon: '📡' },
-] as const
+]
 
 export default function App(): JSX.Element {
   const [page, setPage] = useState<Page>('dashboard')
@@ -31,9 +32,12 @@ export default function App(): JSX.Element {
 
   if (booting) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 14 }}>
-        <div className="spinner" />
-        <span style={{ color: 'var(--text-mute)', fontSize: 14 }}>Starting SyncStay…</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 16 }}>
+        <img src={logoUrl} alt="SyncStay" style={{ width: 56, height: 56, borderRadius: 12, opacity: 0.8 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="spinner" />
+          <span style={{ color: 'var(--text-mute)', fontSize: 14 }}>Starting SyncStay…</span>
+        </div>
       </div>
     )
   }
@@ -58,10 +62,10 @@ export default function App(): JSX.Element {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src="../../../../logo.png" alt="SyncStay" className="sidebar-logo" />
+          <img src={logoUrl} alt="SyncStay" className="sidebar-logo" />
           <div>
             <div className="sidebar-name">SyncStay</div>
-            <div className="sidebar-tag">One platform. Every device.</div>
+            <div className="sidebar-tag">Every device. No compromise.</div>
           </div>
         </div>
 
@@ -70,7 +74,7 @@ export default function App(): JSX.Element {
             <div
               key={item.id}
               className={`nav-item ${page === item.id ? 'active' : ''}`}
-              onClick={() => setPage(item.id as Page)}
+              onClick={() => setPage(item.id)}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
