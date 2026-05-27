@@ -1,0 +1,52 @@
+appId: com.syncstay.desktop
+productName: SyncStay
+copyright: Copyright © 2024 SyncStay
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - package.json
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+
+# sql.js WASM file must be accessible as a plain file (not inside asar)
+extraResources:
+  - from: node_modules/sql.js/dist/sql-wasm.wasm
+    to: sql-wasm.wasm
+
+asar: true
+asarUnpack:
+  - resources/**
+
+win:
+  executableName: SyncStay
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  artifactName: SyncStay-Setup-${version}.exe
+  shortcutName: SyncStay
+  uninstallDisplayName: SyncStay
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  runAfterFinish: true
+  # Add firewall rule during install (runs with admin privileges)
+  include: build/installer.nsh
+
+npmRebuild: false
+
+publish:
+  provider: generic
+  url: https://example.com/updates
