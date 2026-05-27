@@ -7,6 +7,7 @@ import * as os from 'os'
 import * as net from 'net'
 import { apiPort } from '../api'
 import QRCode from 'qrcode'
+import { getApiToken } from '../auth'
 
 const router = Router()
 
@@ -15,7 +16,8 @@ router.get('/server-info', async (_req: Request, res: Response) => {
   try {
     const localIp = getLocalIpAddress()
     const pairingUrl = `http://${localIp}:${apiPort}`
-    const qrDataUrl = await QRCode.toDataURL(JSON.stringify({ url: pairingUrl, token: 'hotel-checkin-v1' }), {
+    const token = getApiToken()
+    const qrDataUrl = await QRCode.toDataURL(JSON.stringify({ url: pairingUrl, token }), {
       width: 256,
       margin: 2,
       color: { dark: '#ffffff', light: '#0d0d0f' },
@@ -26,6 +28,7 @@ router.get('/server-info', async (_req: Request, res: Response) => {
       port: apiPort,
       pairing_url: pairingUrl,
       qr_code: qrDataUrl,
+      token,
     })
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate server info.' })

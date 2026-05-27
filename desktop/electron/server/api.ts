@@ -1,4 +1,4 @@
-import express, { Application } from 'express'
+import express, { Application, Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import * as http from 'http'
 import { initDatabase } from './db'
@@ -7,6 +7,7 @@ import bookingsRouter from './routes/bookings'
 import guestsRouter from './routes/guests'
 import settingsRouter from './routes/settings'
 import uploadRouter from './routes/upload'
+import { getApiToken } from './auth'
 
 let server: http.Server | null = null
 export let apiPort = 8080
@@ -20,6 +21,34 @@ export async function startApiServer(): Promise<{ port: number }> {
   app.use(cors({ origin: '*' }))
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ extended: true, limit: '50mb' }))
+
+  // Authentication Middleware:
+  // Allows loopback requests (desktop client UI) automatically, but requires pairing token header for remote devices
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'OPTIONS') {
+      return next()
+    }
+
+    const clientIp = req.ip || req.socket.remoteAddress || ''
+    const isLocal = clientIp === '127.0.0.1' ||
+                    clientIp === '::1' ||
+                    clientIp === '::ffff:127.0.0.1' ||
+                    req.hostname === 'localhost' ||
+                    req.hostname === '127.0.0.1'
+
+    if (isLocal) {
+      return next()
+    }
+
+    const authHeader = req.headers.authorization
+    const expectedToken = getApiToken()
+
+    if (authHeader && authHeader === `Bearer ${expectedToken}`) {
+      return next()
+    }
+
+    res.status(401).json({ error: 'Unauthorized: Invalid or missing pairing credentials.' })
+  })
 
   // Health check — used by APK to test connection before check-in
   app.get('/api/health', (_req, res) => {

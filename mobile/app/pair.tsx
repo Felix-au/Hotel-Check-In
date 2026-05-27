@@ -25,13 +25,17 @@ export default function PairScreen() {
 
     try {
       let url = data
+      let token: string | undefined
       // Data may be JSON: { url, token }
       try {
         const parsed = JSON.parse(data)
-        if (parsed.url) url = parsed.url
+        if (parsed.url) {
+          url = parsed.url
+          token = parsed.token
+        }
       } catch { /* raw URL */ }
 
-      await testAndSave(url)
+      await testAndSave(url, token)
     } catch (err: any) {
       Alert.alert('Invalid QR Code', err.message ?? 'Could not parse pairing data.')
       setScanned(false)
@@ -44,11 +48,11 @@ export default function PairScreen() {
     await testAndSave(url)
   }
 
-  const testAndSave = async (url: string) => {
+  const testAndSave = async (url: string, token?: string) => {
     setTesting(true)
     try {
-      // Temporarily set URL to test it
-      await saveServerConfig({ url })
+      // Temporarily set config to test it
+      await saveServerConfig({ url, token })
       const ok = await pingServer()
       if (!ok) throw new Error(`Could not reach ${url}. Ensure you're on the same network or VPN.`)
       setCurrentUrl(url)

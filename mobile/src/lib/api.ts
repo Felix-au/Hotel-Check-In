@@ -32,10 +32,22 @@ async function getBaseUrl(): Promise<string> {
   return config.url.replace(/\/$/, '')
 }
 
+async function getHeaders(): Promise<HeadersInit> {
+  const config = await getServerConfig()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (config?.token) {
+    headers['Authorization'] = `Bearer ${config.token}`
+  }
+  return headers
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const base = await getBaseUrl()
+  const headers = await getHeaders()
   const res = await fetch(`${base}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
   })
   if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`)
   return res.json()
@@ -43,9 +55,10 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const base = await getBaseUrl()
+  const headers = await getHeaders()
   const res = await fetch(`${base}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -57,6 +70,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 export async function apiUpload(path: string, fileUri: string, fieldName: string): Promise<{ path: string; filename: string }> {
   const base = await getBaseUrl()
+  const config = await getServerConfig()
   const formData = new FormData()
   formData.append(fieldName, {
     uri: fileUri,
@@ -64,8 +78,14 @@ export async function apiUpload(path: string, fileUri: string, fieldName: string
     name: `${fieldName}-${Date.now()}.jpg`,
   } as any)
 
+  const headers: Record<string, string> = {}
+  if (config?.token) {
+    headers['Authorization'] = `Bearer ${config.token}`
+  }
+
   const res = await fetch(`${base}${path}`, {
     method: 'POST',
+    headers,
     body: formData,
   })
   if (!res.ok) throw new Error(`Upload ${path} failed: ${res.status}`)
@@ -75,7 +95,15 @@ export async function apiUpload(path: string, fileUri: string, fieldName: string
 export async function pingServer(): Promise<boolean> {
   try {
     const base = await getBaseUrl()
-    const res = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(4000) })
+    const config = await getServerConfig()
+    const headers: Record<string, string> = {}
+    if (config?.token) {
+      headers['Authorization'] = `Bearer ${config.token}`
+    }
+    const res = await fetch(`${base}/api/health`, {
+      headers,
+      signal: AbortSignal.timeout(4000)
+    })
     return res.ok
   } catch {
     return false
