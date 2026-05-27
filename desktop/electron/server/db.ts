@@ -51,10 +51,22 @@ export function getPool(): any {
 }
 
 export async function initDatabase(): Promise<void> {
+  // 1. Create a temporary connection without selecting a database to ensure the DB exists first
+  const tempConn = await mysql.createConnection({
+    host: '127.0.0.1',
+    port: 3307,
+    user: 'root',
+    password: '',
+  })
+  try {
+    await tempConn.query(`CREATE DATABASE IF NOT EXISTS hotel_checkin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
+  } finally {
+    await tempConn.end()
+  }
+
+  // 2. Obtain connection from pool (database now guaranteed to exist) and set up tables
   const conn = await getPool().getConnection()
   try {
-    // Ensure the database exists
-    await conn.query(`CREATE DATABASE IF NOT EXISTS hotel_checkin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
     await conn.query(`USE hotel_checkin`)
 
     // ROOMS table
