@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, SafeAr
 import * as ImagePicker from 'expo-image-picker'
 import { colors, radius, font, space } from '../theme'
 import { smartCheckin } from '../sync'
-import { fetchAvailableRooms, uploadPhoto } from '../api'
+import { fetchAvailableRooms, uploadPhoto, ping } from '../api'
 import PhotoWidget from '../components/PhotoWidget'
 import { saveRoomsCache, getRoomsCache } from '../store'
 
@@ -99,16 +99,21 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
     setSaving(true)
     try {
       const sexMap: Record<string,string> = { M:'male', F:'female', O:'other' }
+      const isOnline = await ping()
 
-      // Upload guest photos in parallel (using pre-computed base64)
-      const photoPaths = await Promise.all(
-        guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`, x.photoBase64) : Promise.resolve(null))
-      )
-      // Upload document photo
-      const docPath = docUri ? await uploadPhoto(docUri, 'doc', docBase64) : null
+      let photoPaths: (string|null)[] = guests.map(() => null)
+      let docPath: string|null = null
 
-      const res = await smartCheckin({
-        guests: guests.map((x,i) => ({
+      if (isOnline) {
+        // Upload photos now while online
+        photoPaths = await Promise.all(
+          guests.map((x, i) => x.photoUri ? uploadPhoto(x.photoUri, `guest${i+1}`, x.photoBase64) : Promise.resolve(null))
+        )
+        docPath = docUri ? await uploadPhoto(docUri, 'doc', docBase64) : null
+      }
+
+      const payload = {
+        guests: guests.map((x, i) => ({
           name: x.name.trim()||`Guest ${i+1}`,
           phone: x.phone||undefined,
           age: x.age?parseInt(x.age):undefined,
@@ -116,12 +121,19 @@ export default function CheckInWizard({ onDone }: { onDone: () => void }) {
           photo_path: photoPaths[i]??undefined,
           is_primary: i===0
         })),
-        room_ids: selRooms, check_out_date: checkout(), document_path: docPath??undefined, notes: notes.trim()||undefined
-      }, {
-        // Only store URIs that failed to upload — they'll be retried on sync
-        guests: guests.map((x, i) => photoPaths[i] === null ? x.photoUri : null),
-        document: docPath === null ? docUri : null
-      })
+        room_ids: selRooms,
+        check_out_date: checkout(),
+        document_path: docPath??undefined,
+        notes: notes.trim()||undefined
+      }
+
+      // If offline, store base64 (not URIs) so photos persist until sync
+      const photoBase64 = isOnline ? undefined : {
+        guests: guests.map(x => x.photoBase64 ?? null),
+        document: docBase64 ?? null
+      }
+
+      const res = await smartCheckin(payload, photoBase64)
       setResult(res)
     } catch(e:any) { Alert.alert('Error', e.message) }
     setSaving(false)
