@@ -38,7 +38,7 @@ Write-Host "[MariaDB Setup] Target:  $TargetDir`n"
 
 # ── 1. Check if already present ────────────────────────────────────────────
 if (Test-Path "$TargetDir\mysqld.exe") {
-    Write-Host "[MariaDB Setup] ✓ mysqld.exe already exists. Nothing to do." -ForegroundColor Green
+    Write-Host "[MariaDB Setup] [OK] mysqld.exe already exists. Nothing to do." -ForegroundColor Green
     exit 0
 }
 
@@ -82,7 +82,7 @@ $ExtractedRoot = Get-ChildItem $ExtractDir -Directory | Select-Object -First 1
 $BinSource     = "$($ExtractedRoot.FullName)\bin"
 
 if (-Not (Test-Path $BinSource)) {
-    Write-Host "[MariaDB Setup] ✗ Could not find bin/ in extracted archive." -ForegroundColor Red
+    Write-Host "[MariaDB Setup] [ERROR] Could not find bin/ in extracted archive." -ForegroundColor Red
     exit 1
 }
 
@@ -91,10 +91,10 @@ Copy-Item -Path "$BinSource\*" -Destination $TargetDir -Recurse -Force
 
 # ── 7. Verify ───────────────────────────────────────────────────────────────
 if (Test-Path "$TargetDir\mysqld.exe") {
-    Write-Host "`n[MariaDB Setup] ✓ Success! mysqld.exe is ready at:" -ForegroundColor Green
+    Write-Host "`n[MariaDB Setup] [OK] Success! mysqld.exe is ready at:" -ForegroundColor Green
     Write-Host "    $TargetDir\mysqld.exe`n"
 } else {
-    Write-Host "[MariaDB Setup] ✗ mysqld.exe not found after extraction." -ForegroundColor Red
+    Write-Host "[MariaDB Setup] [ERROR] mysqld.exe not found after extraction." -ForegroundColor Red
     exit 1
 }
 
