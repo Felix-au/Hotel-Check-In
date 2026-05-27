@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#060C17"
     },
-    "ios": { "supportsTablet": false },
+    "ios": {
+      "supportsTablet": false
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -23,7 +25,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -31,15 +34,22 @@
       "expo-status-bar",
       [
         "expo-camera",
-        { "cameraPermission": "SyncStay needs camera access for guest photos and QR code scanning." }
+        {
+          "cameraPermission": "SyncStay needs camera access for guest photos and QR code scanning."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "SyncStay needs gallery access to attach document photos." }
+        {
+          "photosPermission": "SyncStay needs gallery access to attach document photos."
+        }
       ]
     ],
     "extra": {
-      "eas": { "projectId": "syncstay-mobile" }
-    }
+      "eas": {
+        "projectId": "ae7afe07-ca39-4c19-bf61-747369b0e7c7"
+      }
+    },
+    "owner": "felixau"
   }
 }
