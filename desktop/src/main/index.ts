@@ -10,6 +10,31 @@ import { startApiServer, stopApiServer, getLocalIp, apiPort } from './api'
 
 const execAsync = promisify(exec)
 
+/**
+ * Ensures the Windows Firewall allows inbound traffic on port 8080.
+ * If the rule is missing, spawns an elevated PowerShell (UAC prompt) to add it.
+ * Safe to call on every launch — does nothing if the rule already exists.
+ */
+async function ensureFirewallRule(): Promise<void> {
+  if (process.platform !== 'win32') return
+  try {
+    const { stdout } = await execAsync('netsh advfirewall firewall show rule name="SyncStay API"').catch(() => ({ stdout: '' }))
+    if (stdout.includes('SyncStay API')) {
+      console.log('[Firewall] Rule already present — skipping')
+      return
+    }
+    console.log('[Firewall] Rule missing — requesting elevation to add it...')
+    // Start-Process with -Verb RunAs triggers Windows UAC elevation dialog
+    await execAsync(
+      `powershell -Command "Start-Process -FilePath 'netsh' -ArgumentList 'advfirewall firewall add rule name=SyncStay-API dir=in action=allow protocol=TCP localport=8080' -Verb RunAs -Wait"`
+    )
+    console.log('[Firewall] Rule added successfully')
+  } catch (err: any) {
+    // Non-fatal: user cancelled UAC or policy blocks elevation
+    console.warn('[Firewall] Could not add rule (user may have cancelled UAC):', err.message)
+  }
+}
+
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
@@ -94,13 +119,10 @@ function registerIpcHandlers(): void {
       // Step 2: Firewall rule
       send('Adding firewall rule for port 8080', 'running')
       try {
-        await execAsync(
-          'netsh advfirewall firewall add rule name="SyncStay API" dir=in action=allow protocol=TCP localport=8080'
-        )
+        await ensureFirewallRule()
         send('Adding firewall rule for port 8080', 'done')
       } catch {
-        // Non-fatal — user may not have admin rights; server still works on LAN
-        send('Adding firewall rule for port 8080', 'done', 'Skipped (run as admin to add automatically)')
+        send('Adding firewall rule for port 8080', 'done', 'Skipped (UAC cancelled or not supported)')
       }
 
       // Step 3: Token
@@ -126,6 +148,7 @@ function registerIpcHandlers(): void {
     try {
       await initDatabase()
       autoCheckoutOverdue()   // check out any past-due bookings on every launch
+      ensureFirewallRule()    // ensure port 8080 is open (non-blocking)
       await startApiServer()
       return { needsSetup: false, port: apiPort }
     } catch (err: any) {
