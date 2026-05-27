@@ -56,13 +56,8 @@ function GroupSizeSelector() {
   )
 }
 
-// Wrap with provider so nested screens share state
 export default function CheckInIndex() {
-  return (
-    <CheckInProvider>
-      <GroupSizeSelector />
-    </CheckInProvider>
-  )
+  return <GroupSizeSelector />
 }
 
 const s = StyleSheet.create({

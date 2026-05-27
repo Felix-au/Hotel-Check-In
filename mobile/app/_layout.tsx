@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { openQueue } from '../src/lib/offlineQueue'
 import { startSyncEngine, stopSyncEngine } from '../src/lib/syncEngine'
 import { Colors } from '../src/constants/theme'
+import { CheckInProvider } from './checkin/_context'
 
 export default function RootLayout() {
   useEffect(() => {
@@ -14,7 +15,7 @@ export default function RootLayout() {
   }, [])
 
   return (
-    <>
+    <CheckInProvider>
       <StatusBar style="light" backgroundColor={Colors.bgBase} />
       <Stack
         screenOptions={{
@@ -35,6 +36,6 @@ export default function RootLayout() {
         <Stack.Screen name="checkin/confirm"      options={{ title: 'Confirm Check-In' }} />
         <Stack.Screen name="queue"         options={{ title: 'Sync Queue' }} />
       </Stack>
-    </>
+    </CheckInProvider>
   )
 }
