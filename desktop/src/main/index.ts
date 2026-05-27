@@ -11,6 +11,48 @@ import { startApiServer, stopApiServer, getLocalIp, apiPort } from './api'
 // Disable GPU acceleration to prevent FATAL crashes in virtual/RDP/VM environments
 app.disableHardwareAcceleration()
 
+function setupLogging(): void {
+  try {
+    const logDir = app.getPath('userData')
+    fs.mkdirSync(logDir, { recursive: true })
+    const logFile = join(logDir, 'app.log')
+    
+    // Clear and write start header
+    fs.writeFileSync(logFile, `=== SyncStay Start Log ${new Date().toISOString()} ===\n`)
+    
+    const writeLog = (type: string, ...args: any[]) => {
+      const msg = `[${new Date().toISOString()}] [${type}] ${args.map(x => typeof x === 'object' ? JSON.stringify(x) : x).join(' ')}\n`
+      fs.appendFileSync(logFile, msg)
+    }
+    
+    const originalLog = console.log
+    const originalError = console.error
+    const originalWarn = console.warn
+    
+    console.log = (...args) => {
+      originalLog(...args)
+      writeLog('INFO', ...args)
+    }
+    console.error = (...args) => {
+      originalError(...args)
+      writeLog('ERROR', ...args)
+    }
+    console.warn = (...args) => {
+      originalWarn(...args)
+      writeLog('WARN', ...args)
+    }
+    
+    process.on('uncaughtException', (err) => {
+      writeLog('FATAL', `Uncaught Exception: ${err?.stack || err?.message || err}`)
+      originalError('Uncaught Exception:', err)
+    })
+  } catch (err) {
+    console.error('Failed to setup logging:', err)
+  }
+}
+
+setupLogging()
+
 const execAsync = promisify(exec)
 
 /**
