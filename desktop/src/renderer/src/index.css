@@ -295,9 +295,9 @@ tr.clickable:hover td { background: rgba(201,149,106,0.05); }
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
 }
 .party-btn {
-  aspect-ratio: 1; border-radius: var(--r-md);
+  height: 52px; border-radius: var(--r-md);
   border: 2px solid var(--border); background: var(--bg-elevated);
-  font-size: 20px; font-weight: 800; color: var(--text-sec);
+  font-size: 18px; font-weight: 800; color: var(--text-sec);
   cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center;
   font-family: inherit;
 }
@@ -422,3 +422,60 @@ tr.clickable:hover td { background: rgba(201,149,106,0.05); }
 .detail-kv-row:last-child { border-bottom: none; }
 .detail-k { font-size: 12px; color: var(--text-mute); font-weight: 600; min-width: 110px; flex-shrink: 0; }
 .detail-v { font-size: 13px; color: var(--text-pri); font-weight: 500; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CAMERA MODAL
+═══════════════════════════════════════════════════════════════════════════════ */
+.camera-modal { max-width: 520px; padding: 20px; }
+.camera-video {
+  width: 100%; border-radius: var(--r-md);
+  background: #000; display: block;
+  border: 2px solid var(--border);
+  max-height: 340px; object-fit: cover;
+}
+.camera-preview {
+  width: 100%; border-radius: var(--r-md);
+  border: 2px solid var(--accent);
+  max-height: 340px; object-fit: contain;
+  background: var(--bg-elevated); display: block;
+}
+.camera-actions {
+  display: flex; gap: 10px; margin-top: 14px; justify-content: center;
+}
+.capture-btn {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 3px solid var(--accent); background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 22px; transition: all 0.15s;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.capture-btn:hover { background: var(--accent-hi); transform: scale(1.05); }
+
+/* Photo button (shows current photo + camera/browse buttons) */
+.photo-btn-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.photo-thumb {
+  width: 120px; height: 120px; border-radius: var(--r-md);
+  border: 2px solid var(--border-hi); background: var(--bg-elevated);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  font-size: 36px; color: var(--text-mute); cursor: pointer;
+  transition: border-color 0.15s; position: relative;
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-thumb:hover { border-color: var(--accent); }
+.photo-actions-row { display: flex; gap: 6px; }
+
+/* Doc upload area */
+.doc-upload-area {
+  width: 100%; min-height: 160px;
+  border: 2px dashed var(--border-hi); border-radius: var(--r-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; background: var(--bg-elevated);
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
+}
+.doc-upload-area:hover { border-color: var(--accent); background: var(--accent-dim); }
+.doc-upload-area img {
+  width: 100%; max-height: 260px; object-fit: contain; border-radius: var(--r-sm);
+}

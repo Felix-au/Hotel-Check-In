@@ -52,7 +52,13 @@ const api = {
 
   dialog: {
     pickImage: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickImage')
+  },
+
+  photo: {
+    save: (data: { dataUrl: string; prefix?: string }): Promise<string> =>
+      ipcRenderer.invoke('photo:save', data)
   }
+
 }
 
 if (process.contextIsolated) {

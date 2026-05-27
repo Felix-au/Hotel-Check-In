@@ -21,8 +21,15 @@ declare global {
         checkout: (id: number) => Promise<any>
       }
       checkin: {
-        submit: (data: any) => Promise<any>
+        submit: (data: {
+          bookingId: number
+          guestName: string
+          photo_path: string
+          document_path: string
+        }) => Promise<any>
       }
+      dialog: { pickImage: () => Promise<string | null> }
+      photo: { save: (d: { dataUrl: string; prefix?: string }) => Promise<string> }
       stats: {
         get: () => Promise<any>
       }

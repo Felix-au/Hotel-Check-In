@@ -143,9 +143,18 @@ export function dbGet(sql: string, params: any[] = []): Record<string, any> | nu
   return rows[0] ?? null
 }
 
-// Helper: run INSERT/UPDATE/DELETE, save db, return lastInsertRowid
+// Helper: run INSERT/UPDATE/DELETE, return lastInsertRowid
 export function dbRun(sql: string, params: any[] = []): number {
-  getDb().run(sql, params)
-  saveDatabase()
-  return getDb().exec('SELECT last_insert_rowid()')[0]?.values[0][0] as number ?? 0
+  try {
+    const stmt = getDb().prepare(sql)
+    stmt.run(params)
+    stmt.free()
+    // MUST read rowid BEFORE saveDatabase (export doesn't reset it, but order matters)
+    const rowid = (getDb().exec('SELECT last_insert_rowid()')[0]?.values?.[0]?.[0] as number) ?? 0
+    saveDatabase()
+    return rowid
+  } catch (err) {
+    console.error('[DB] dbRun ERROR:', sql, '\nParams:', params, '\nError:', err)
+    throw err
+  }
 }

@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, session } from 'electron'
 import { join } from 'path'
+import * as fs from 'fs'
 import { electronApp } from '@electron-toolkit/utils'
 import { exec } from 'child_process'
 import { promisify } from 'util'
@@ -44,6 +45,11 @@ function createWindow(): void {
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.syncstay.desktop')
+
+  // Allow camera access for photo capture
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media')
+  })
 
   // Open devtools on F12 in dev
   app.on('browser-window-created', (_, win) => {
@@ -178,13 +184,15 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('bookings:checkout', (_e, { id }) => {
-    const booking = dbGet(`SELECT * FROM booking_groups WHERE id = ?`, [id])
-    if (!booking) return { error: 'Booking not found' }
-    dbRun(`UPDATE booking_groups SET status = 'checked_out' WHERE id = ?`, [id])
-    // Free up the rooms
-    const allocations = dbAll(`SELECT room_id FROM room_allocations WHERE group_id = ?`, [id])
+    const numId = Number(id)
+    console.log('[IPC] bookings:checkout id=', numId)
+    const booking = dbGet(`SELECT * FROM booking_groups WHERE id = ?`, [numId])
+    if (!booking) { console.warn('[IPC] Booking not found:', numId); return { error: 'Booking not found' } }
+    dbRun(`UPDATE booking_groups SET status = 'checked_out' WHERE id = ?`, [numId])
+    const allocations = dbAll(`SELECT room_id FROM room_allocations WHERE group_id = ?`, [numId])
+    console.log('[IPC] Freeing', allocations.length, 'rooms for group', numId)
     for (const a of allocations) {
-      dbRun(`UPDATE rooms SET status = 'checkout', updated_at = datetime('now') WHERE id = ?`, [a.room_id])
+      dbRun(`UPDATE rooms SET status = 'available', updated_at = datetime('now') WHERE id = ?`, [Number(a.room_id)])
     }
     return { ok: true }
   })
@@ -215,18 +223,29 @@ function registerIpcHandlers(): void {
 
   // ── Booking detail ────────────────────────────────────────────────────────────
   ipcMain.handle('bookings:detail', (_e, { id }) => {
-    const booking = dbGet(`SELECT * FROM booking_groups WHERE id = ?`, [id])
-    if (!booking) return null
-    const guests = dbAll(`SELECT * FROM guests WHERE group_id = ? ORDER BY is_primary_contact DESC, id`, [id])
-    const rooms  = dbAll(`
-      SELECT r.* FROM rooms r
-      JOIN room_allocations ra ON ra.room_id = r.id
-      WHERE ra.group_id = ?
-    `, [id])
+    const numId = Number(id)
+    console.log('[IPC] bookings:detail id=', numId)
+    const booking = dbGet(`SELECT * FROM booking_groups WHERE id = ?`, [numId])
+    if (!booking) { console.warn('[IPC] No booking found for id', numId); return null }
+    const guests = dbAll(`SELECT * FROM guests WHERE group_id = ? ORDER BY is_primary_contact DESC, id`, [numId])
+    const rooms  = dbAll(`SELECT r.* FROM rooms r JOIN room_allocations ra ON ra.room_id = r.id WHERE ra.group_id = ?`, [numId])
+    console.log('[IPC] Detail: booking', booking.booking_reference, '| guests', guests.length, '| rooms', rooms.length)
     return { booking, guests, rooms }
   })
 
-  // ── Image picker dialog ────────────────────────────────────────────────────────
+  // ── Save camera-captured photo to disk ──────────────────────────────────────
+  ipcMain.handle('photo:save', async (_e, { dataUrl, prefix = 'photo' }) => {
+    const photosDir = join(app.getPath('userData'), 'photos')
+    fs.mkdirSync(photosDir, { recursive: true })
+    const fileName = `${prefix}_${Date.now()}.jpg`
+    const filePath = join(photosDir, fileName)
+    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+    fs.writeFileSync(filePath, Buffer.from(base64, 'base64'))
+    console.log('[Photo] Saved:', filePath)
+    return filePath
+  })
+
+  // ── Image file picker dialog ───────────────────────────────────────────────
   ipcMain.handle('dialog:pickImage', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile'],
