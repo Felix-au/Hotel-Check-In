@@ -26,15 +26,19 @@ export default function PairScreen({ onPaired }: Props) {
     }
     setTesting(true); setStatus('Connecting…')
     await saveServerConfig(url.trim(), token.trim())
-    const ok = await ping()
-    if (!ok) {
+    try {
+      const ok = await ping()
+      if (!ok) throw new Error('Server did not respond at ' + url.trim())
+      setStatus('Connected! ✓')
+      setTimeout(onPaired, 700)
+    } catch (err: any) {
       await saveServerConfig('', '')
       setTesting(false); setStatus('')
-      Alert.alert('Connection Failed', 'Could not reach the server. Check the URL and ensure both devices are on the same WiFi network.')
-      return
+      Alert.alert(
+        'Connection Failed',
+        `Could not reach the server.\n\nURL: ${url.trim()}\n\nError: ${err.message ?? 'Network error'}\n\nMake sure:\n• Both devices on same WiFi\n• Desktop app is running\n• URL is correct (http://IP:8080)`
+      )
     }
-    setStatus('Connected! ✓')
-    setTimeout(onPaired, 700)
   }
 
   const handleScan = async ({ data }: { data: string }) => {

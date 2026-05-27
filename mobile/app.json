@@ -21,6 +21,7 @@
         "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.syncstay.mobile",
+      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

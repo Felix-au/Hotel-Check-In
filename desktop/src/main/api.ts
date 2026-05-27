@@ -14,12 +14,23 @@ export let apiPort = 8080
 
 export function getLocalIp(): string {
   const interfaces = os.networkInterfaces()
+  const candidates: string[] = []
+
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name] ?? []) {
-      if (iface.family === 'IPv4' && !iface.internal) return iface.address
+      if (iface.family === 'IPv4' && !iface.internal) {
+        candidates.push(iface.address)
+      }
     }
   }
-  return '127.0.0.1'
+
+  // Prefer home LAN ranges (192.168.x.x, 10.x.x.x) over VPN/hotspot
+  const lan = candidates.find(ip => ip.startsWith('192.168.'))
+    ?? candidates.find(ip => ip.startsWith('10.'))
+    ?? candidates[0]
+    ?? '127.0.0.1'
+
+  return lan
 }
 
 export async function startApiServer(): Promise<number> {
